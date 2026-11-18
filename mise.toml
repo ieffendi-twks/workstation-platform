@@ -1,3 +1,6 @@
+[settings]
+task.output = "interleave"
+
 [tools]
 ansible-core = "2.22.0"
 prek = "0.5.11"
