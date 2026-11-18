@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+#MISE description="List versions of a package on pypi.org"
+#MISE alias="ws:pypi-versions"
+#MISE dir="{{cwd}}"
+#USAGE arg "<package>" help="PyPI package name"
+#USAGE flag "--ages" help="Show release date and age in days next to each version"
+#
+# Exit codes: 0 ok, 1 package not found (or has no releases), 2 usage/tooling error.
+# Read-only. Does not install or modify anything.
+
+set -eu
+
+die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
+
+pkg=${usage_package:?}
+ages=${usage_ages:-false}
+
+command -v curl >/dev/null 2>&1 || die "curl is required but not on PATH" 2
+command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH" 2
+
+case $pkg in
+  ''|*[!A-Za-z0-9._-]*)
+    die "invalid package name: '$pkg' (allowed: A-Z a-z 0-9 . _ -)" 2
+    ;;
+esac
+
+# Version sort: GNU sort -V where available, BSD fallback for macOS.
+vsort() {
+  if sort --version 2>/dev/null | grep -qi 'gnu'; then
+    sort -V
+  else
+    sort -t. -k1,1n -k2,2n -k3,3n -k4,4n
+  fi
+}
+
+url="https://pypi.org/pypi/$pkg/json"
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+
+http=$(curl -sS -L -o "$tmp" -w '%{http_code}' "$url" 2>/dev/null) \
+  || die "could not reach pypi.org" 2
+
+case $http in
+  200) ;;
+  404) die "package not found on PyPI: $pkg" 1 ;;
+  *)   die "pypi.org returned HTTP $http for '$pkg'" 2 ;;
+esac
+
+if [ "$ages" = "true" ]; then
+  out=$(jq -r '
+    .releases
+    | to_entries[]
+    | select(.value | length > 0)
+    | .key as $v
+    | (.value | map(.upload_time) | min) as $t
+    | ($t[:10] | strptime("%Y-%m-%d") | mktime) as $ts
+    | (((now - $ts) / 86400) | floor) as $age
+    | if $age >= 0
+      then "\($v)\t\($t[:10])\t\($age)d ago"
+      else "\($v)\t\($t[:10])\t(future release date)"
+      end
+  ' "$tmp") || die "could not parse pypi.org response for '$pkg'" 2
+else
+  out=$(jq -r '.releases | keys[]' "$tmp") \
+    || die "could not parse pypi.org response for '$pkg'" 2
+fi
+
+[ -n "$out" ] || die "package '$pkg' has no releases on PyPI" 1
+
+printf '%s\n' "$out" | vsort
