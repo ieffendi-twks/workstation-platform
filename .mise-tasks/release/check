@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# .mise/tasks/release/check
+#MISE description="Validate version and changelog consistency for staged release artifacts"
+#MISE dir="{{config_root}}"
+set -euo pipefail
+
+fail() {
+    printf 'release:check: %s\n' "$1" >&2
+    exit 1
+}
+
+staged_files=$(git diff --cached --name-only)
+version_staged=false
+changelog_staged=false
+printf '%s\n' "$staged_files" | grep -qx '.version' && version_staged=true || true
+printf '%s\n' "$staged_files" | grep -qx 'CHANGELOG.md' && changelog_staged=true || true
+
+# Ordinary commits do not regenerate or validate the release changelog.
+if [ "$version_staged" = "false" ] && [ "$changelog_staged" = "false" ]; then
+    exit 0
+fi
+
+[ "$version_staged" = "true" ] && [ "$changelog_staged" = "true" ] ||
+    fail "stage .version and CHANGELOG.md together; use mise run release:bump"
+
+[ -f .version ] || fail ".version is missing"
+[ -f CHANGELOG.md ] || fail "CHANGELOG.md is missing; use mise run release:bump"
+
+version=$(tr -d '[:space:]' < .version)
+printf '%s\n' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || fail ".version is not stable SemVer"
+[ "$(cz version -p)" = "$version" ] || fail ".version and .cz.toml contain different versions"
+
+first_release_heading=$(grep -m1 '^## ' CHANGELOG.md || true)
+if [ -z "$first_release_heading" ]; then
+    # Permit the initial repository commit before any release exists.
+    [ -z "$(git tag --list)" ] || fail "CHANGELOG.md has no release heading"
+    exit 0
+fi
+
+case $first_release_heading in
+    "## $version ("*) ;;
+    *) fail "latest CHANGELOG.md heading must start with '## $version ('" ;;
+esac
