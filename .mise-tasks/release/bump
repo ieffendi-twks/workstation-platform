@@ -8,12 +8,14 @@
 set -euo pipefail
 
 fail() {
-    printf 'release:bump: %s\n' "$1" >&2
-    exit 1
+  printf 'release:bump: %s\n' "$1" >&2
+  exit 1
 }
 
 [ "$(git branch --show-current)" = "main" ] || fail "run releases on main"
-git diff --quiet && git diff --cached --quiet || fail "commit or stash all changes first"
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  fail "commit or stash all changes first"
+fi
 
 git remote get-url origin >/dev/null 2>&1 || fail "origin remote is required"
 git fetch origin main --tags
@@ -25,11 +27,11 @@ dry_run=${usage_dry_run:-false}
 
 [ -z "$increment" ] || [ -z "$exact_version" ] || fail "use --increment or --version, not both"
 case $increment in
-    "" | MAJOR | MINOR | PATCH) ;;
-    *) fail "--increment must be MAJOR, MINOR, or PATCH" ;;
+  "" | MAJOR | MINOR | PATCH) ;;
+  *) fail "--increment must be MAJOR, MINOR, or PATCH" ;;
 esac
 if [ -n "$exact_version" ] && ! printf '%s\n' "$exact_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    fail "--version must be stable SemVer, for example 2.0.0"
+  fail "--version must be stable SemVer, for example 2.0.0"
 fi
 
 arguments=(--yes --changelog)
@@ -38,18 +40,18 @@ arguments=(--yes --changelog)
 # Forced increments and exact versions must work even when there are no new
 # eligible Conventional Commits. Automatic bumps intentionally do not.
 if [ -n "$increment" ]; then
-    arguments+=(--increment "$increment" --allow-no-commit)
+  arguments+=(--increment "$increment" --allow-no-commit)
 elif [ -n "$exact_version" ]; then
-    arguments+=(--allow-no-commit "$exact_version")
+  arguments+=(--allow-no-commit "$exact_version")
 fi
 
 cz bump "${arguments[@]}"
 
 if [ "$dry_run" = "true" ]; then
-    exit 0
+  exit 0
 fi
 
-new_version=$(tr -d '[:space:]' < .version)
+new_version=$(tr -d '[:space:]' <.version)
 [ "$(git cat-file -t "$new_version")" = "tag" ] || fail "release tag $new_version is not annotated"
 
 printf '\nCreated annotated release tag %s.\n' "$new_version"

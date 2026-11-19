@@ -10,7 +10,10 @@
 
 set -eu
 
-die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
+die() {
+  printf '%s\n' "$1" >&2
+  exit "${2:-2}"
+}
 
 pkg=${usage_package:?}
 ages=${usage_ages:-false}
@@ -19,7 +22,7 @@ command -v curl >/dev/null 2>&1 || die "curl is required but not on PATH" 2
 command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH" 2
 
 case $pkg in
-  ''|*[!A-Za-z0-9._-]*)
+  '' | *[!A-Za-z0-9._-]*)
     die "invalid package name: '$pkg' (allowed: A-Z a-z 0-9 . _ -)" 2
     ;;
 esac
@@ -37,13 +40,13 @@ url="https://pypi.org/pypi/$pkg/json"
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
 
-http=$(curl -sS -L -o "$tmp" -w '%{http_code}' "$url" 2>/dev/null) \
-  || die "could not reach pypi.org" 2
+http=$(curl -sS -L -o "$tmp" -w '%{http_code}' "$url" 2>/dev/null) ||
+  die "could not reach pypi.org" 2
 
 case $http in
   200) ;;
   404) die "package not found on PyPI: $pkg" 1 ;;
-  *)   die "pypi.org returned HTTP $http for '$pkg'" 2 ;;
+  *) die "pypi.org returned HTTP $http for '$pkg'" 2 ;;
 esac
 
 if [ "$ages" = "true" ]; then
@@ -61,8 +64,8 @@ if [ "$ages" = "true" ]; then
       end
   ' "$tmp") || die "could not parse pypi.org response for '$pkg'" 2
 else
-  out=$(jq -r '.releases | keys[]' "$tmp") \
-    || die "could not parse pypi.org response for '$pkg'" 2
+  out=$(jq -r '.releases | keys[]' "$tmp") ||
+    die "could not parse pypi.org response for '$pkg'" 2
 fi
 
 [ -n "$out" ] || die "package '$pkg' has no releases on PyPI" 1

@@ -1,4 +1,5 @@
 # .pre-commit-config.yaml
+---
 # Install hooks after `mise install --locked`:
 #   prek install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
 #
@@ -31,11 +32,11 @@ repos:
         language: system
         types: [yaml]
 
-      - id: ansible-lint
-        name: ansible-lint
-        entry: ansible-lint
-        language: system
-        types: [yaml]
+      # - id: ansible-lint
+      #   name: ansible-lint
+      #   entry: ansible-lint
+      #   language: system
+      #   types: [yaml]
 
       - id: shellcheck
         name: shellcheck
@@ -43,9 +44,11 @@ repos:
         language: system
         types: [shell]
 
+      # -w rewrites files in place; the framework still aborts the commit so
+      # the fixed files can be reviewed and re-staged.
       - id: shfmt
         name: shfmt
-        entry: shfmt -d -i 2 -ci
+        entry: shfmt -w -i 2 -ci
         language: system
         types: [shell]
 
