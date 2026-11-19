@@ -1,0 +1,78 @@
+# .pre-commit-config.yaml
+# Install hooks after `mise install --locked`:
+#   prek install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+#
+# Except for the small pre-commit-hooks utility bundle, every hook executes
+# a command supplied and version-pinned by this project's mise.toml.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: yamllint
+        name: yamllint
+        entry: yamllint -c .yamllint
+        language: system
+        types: [yaml]
+
+      - id: ansible-lint
+        name: ansible-lint
+        entry: ansible-lint
+        language: system
+        types: [yaml]
+
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+
+      - id: shfmt
+        name: shfmt
+        entry: shfmt -d -i 2 -ci
+        language: system
+        types: [shell]
+
+      # Validate each new commit message before Git creates the commit.
+      - id: commitizen
+        name: Conventional Commit message
+        entry: cz check --allow-abort --commit-msg-file
+        language: system
+        stages: [commit-msg]
+        always_run: true
+
+      # Catch commits made through another UI or with local hooks bypassed.
+      # This compares the branch with its fork's origin/main.
+      - id: commitizen-branch
+        name: Conventional Commits on branch
+        entry: cz check --rev-range origin/main..HEAD
+        language: system
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false
+
+      # CHANGELOG.md is generated at release time, not on every commit.
+      # This task exits immediately for ordinary commits. When .version or
+      # CHANGELOG.md is staged, it validates the release artifacts together.
+      - id: release-state
+        name: Release version and changelog consistency
+        entry: mise run release:check
+        language: system
+        always_run: true
+        pass_filenames: false
