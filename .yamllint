@@ -1,0 +1,27 @@
+# yamllint configuration, aligned with ansible-lint's recommended settings
+# (https://ansible.readthedocs.io/projects/lint/rules/yaml/) so the two
+# linters never disagree if the ansible-lint hook is re-enabled.
+---
+extends: default
+
+rules:
+  braces:
+    max-spaces-inside: 1
+  comments:
+    # Allow `#comment` emitted by some tools; require one space otherwise.
+    min-spaces-from-content: 1
+  comments-indentation: false
+  document-start:
+    present: true
+  line-length:
+    max: 120
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  truthy:
+    # Ansible treats bare yes/no/on/off as booleans too, but true/false is
+    # the modern convention enforced by ansible-lint.
+    allowed-values: ['true', 'false']
+
+ignore: |
+  .git/
