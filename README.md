@@ -50,7 +50,7 @@ Important:
 1. Make the scripts executable:
 
    ```sh
-   chmod +x scripts/bootstrap .mise/tasks/release/*
+   chmod +x scripts/bootstrap .mise-tasks/release/*
    ```
 
 2. Install the mise tools:
