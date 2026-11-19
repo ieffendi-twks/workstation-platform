@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# .mise/tasks/release/publish
+#MISE description="Push main and its annotated release tag, then publish a GitHub release"
+#MISE dir="{{config_root}}"
+set -euo pipefail
+
+fail() {
+    printf 'release:publish: %s\n' "$1" >&2
+    exit 1
+}
+
+for command_name in git gh cz; do
+    command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
+done
+gh auth status >/dev/null 2>&1 || fail "run gh auth login first"
+
+[ "$(git branch --show-current)" = "main" ] || fail "publish releases from main"
+git diff --quiet && git diff --cached --quiet || fail "commit or stash all changes first"
+
+version=$(tr -d '[:space:]' < .version)
+[ "$(git cat-file -t "$version")" = "tag" ] || fail "annotated tag $version does not exist"
+[ "$(git rev-parse "$version^{}")" = "$(git rev-parse HEAD)" ] || fail "tag $version does not point to HEAD"
+
+git fetch origin main --tags
+[ "$(git rev-list --count HEAD..origin/main)" = "0" ] || fail "main is behind origin/main; pull or rebase first"
+
+notes_file=$(mktemp)
+trap 'rm -f "$notes_file"' EXIT
+cz changelog "$version" --dry-run > "$notes_file"
+
+# Never force-push. A conflicting remote tag or commit stops publication.
+git push origin main
+git push origin "$version"
+
+if gh release view "$version" >/dev/null 2>&1; then
+    printf 'GitHub release %s already exists; nothing to publish.\n' "$version"
+    exit 0
+fi
+
+gh release create "$version" \
+    --verify-tag \
+    --title "$version" \
+    --notes-file "$notes_file"
