@@ -1,3 +1,9 @@
+## 0.2.1 (2026-11-19)
+
+### Fix
+
+- clarify instructions for updating development tools in README
+
 ## 0.2.0 (2026-11-19)
 
 ### Feat
