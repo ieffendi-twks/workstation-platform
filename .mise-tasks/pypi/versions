@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="List versions of a package on pypi.org"
-#MISE alias="ws:pypi-versions"
+#MISE alias="pypi-versions"
 #MISE dir="{{cwd}}"
 #USAGE arg "<package>" help="PyPI package name"
 #USAGE flag "--ages" help="Show release date and age in days next to each version"
