@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# scripts/bootstrap
+# Run after cloning. Requires Git, Bash, and an installed/activated mise.
+set -euo pipefail
+
+fail() {
+    printf 'bootstrap: %s\n' "$1" >&2
+    exit 1
+}
+
+for command_name in git mise; do
+    command -v "$command_name" >/dev/null 2>&1 ||
+        fail "$command_name must be installed before bootstrap"
+done
+
+repository_root=$(git rev-parse --show-toplevel 2>/dev/null) ||
+    fail "run this script inside the cloned repository"
+cd "$repository_root"
+
+[ -f mise.toml ] || fail "mise.toml is missing"
+
+# Trust only this checkout's reviewed project configuration.
+mise trust mise.toml
+
+# Install the pinned tools. No sudo is used.
+mise install
+
+# Install all three hook stages used by .pre-commit-config.yaml.
+prek install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+
+# Establish a known-good baseline before development starts.
+prek run --all-files
+
+if ! command -v gh >/dev/null 2>&1; then
+    printf '%s\n' "Note: gh is optional. Install and authenticate it for command-line GitHub releases."
+fi
+
+printf '%s\n' "Bootstrap complete. Use 'mise tasks' to list development tasks."
