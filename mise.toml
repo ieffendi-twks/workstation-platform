@@ -14,6 +14,7 @@ trufflehog = "3.99.9"
 uv = "0.13.9"
 
 # PYPI packages
+"pypi:commitizen" = "4.19.3"
 "pypi:detect-secrets" = "1.5.0"
 "pypi:ansible-core" = { version = "2.22.0", expose = [
     "ansible-lint==26.11.0",
@@ -22,4 +23,3 @@ uv = "0.13.9"
 ], with = [
     "molecule-plugins[docker]==26.11.0",
 ] }
-
