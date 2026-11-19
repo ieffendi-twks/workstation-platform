@@ -254,18 +254,17 @@ Only the canonical maintainer cuts upstream releases on upstream `main`. Forks m
 
 ## Updating development tools
 
-Tool versions belong in `mise.toml` and `mise.lock`, not in local hook definitions. Update them deliberately:
+Tool versions belong in `mise.toml`, not in local hook definitions. Update them deliberately:
 
 ```sh
 # Edit the desired pins in mise.toml first.
-mise lock
 mise install
 prek run --all-files
 git add mise.toml mise.lock
 git commit -m "build: update development tools"
 ```
 
-Review lockfile changes like code. Do not run broad upgrades immediately before a release.
+Review version changes like code. Do not run broad upgrades immediately before a release.
 
 ## Reuse in the chezmoi repository
 
