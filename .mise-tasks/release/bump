@@ -34,7 +34,10 @@ if [ -n "$exact_version" ] && ! printf '%s\n' "$exact_version" | grep -Eq '^[0-9
   fail "--version must be stable SemVer, for example 2.0.0"
 fi
 
-arguments=(--yes --changelog)
+# --retry re-stages and re-commits once when pre-commit hooks reject the
+# release commit after rewriting staged files (for example end-of-file-fixer
+# normalizing .version or CHANGELOG.md), absorbing automatic fixes.
+arguments=(--yes --changelog --retry)
 [ "$dry_run" != "true" ] || arguments+=(--dry-run)
 
 # Forced increments and exact versions must work even when there are no new
